@@ -1,9 +1,10 @@
 import openpyxl
 from os import path
 
-def read_excel_data(filename):
+def readCardInfo(filename):
+    p=path.dirname(__file__)+'/../../excel/'+filename
     # 打开Excel文件
-    workbook = openpyxl.load_workbook(filename)
+    workbook = openpyxl.load_workbook(p)
     sheet_names=workbook.sheetnames
     # 选择工作表
     sheet = workbook[sheet_names[0]]
@@ -18,10 +19,10 @@ def read_excel_data(filename):
         data.append(row_data)
     
     return data
+
 if __name__ == "__main__":
-    file_path='card_info.xlsx'
-    p=path.dirname(__file__)+'/../../excel/'+file_path
-    excel_data = read_excel_data(p)
+    file_name='card_info.xlsx'
+    excel_data = readCardInfo(file_name)
 
     # 打印数据
     for row in excel_data:

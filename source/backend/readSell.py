@@ -2,7 +2,7 @@ import openpyxl
 import re
 from os import path
 
-def process_string(string):
+def processString(string):
     strings=string.split(':')
     if(len(strings)<2):
         return "",""
@@ -31,10 +31,10 @@ def process_string(string):
 
     return cn, qq
 
-def readExcel(file_path):
-    print("读取Excel文件:", file_path)
+def readSellInfo(file_path):
+    p=path.dirname(__file__)+'/../../excel/'+file_path
     # 读取Excel文件
-    wb = openpyxl.load_workbook(file_path)
+    wb = openpyxl.load_workbook(p)
     sheet_names=['月影幽光','少女心事','樱的风语']
     # sheet_names=['樱的风语']
     data=[]
@@ -49,8 +49,8 @@ def readExcel(file_path):
             row_data=[]
             for i in range(len(row)):
                 if(i==0):
-                    cn=process_string(row[i].value)[0]
-                    qq=process_string(row[i].value)[1]
+                    cn=processString(row[i].value)[0]
+                    qq=processString(row[i].value)[1]
                     if(cn=="" and qq==""):
                         row_data.append(row[i].value)
                     else:
@@ -65,9 +65,8 @@ def readExcel(file_path):
     return data
 
 if __name__ == "__main__":
-    file_path='sell_info.xlsx'
-    p=path.dirname(__file__)+'/../../excel/'+file_path
+    file_name='sell_info.xlsx'
 
-    data=readExcel(p)
+    data=readSellInfo(file_name)
     for i in range(len(data)):
         print(data[i])
