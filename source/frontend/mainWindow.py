@@ -16,7 +16,7 @@ class MainWindow(QWidget):
 
     def initUI(self):
         self.setWindowTitle('狗宝的Qt界面')
-        self.setGeometry(300, 300, 300, 200)
+        self.setGeometry(300, 300, 600, 400)
 
         layout = QVBoxLayout()
 
@@ -53,7 +53,8 @@ class MainWindow(QWidget):
                 self.selected_file_path = selected_files[0]
 
             file_name=os.path.basename(self.selected_file_path)
-            output=writeToDataBase(file_name)
+            print("文件名: {}".format(file_name))
+            output=writeToDataBase()
             # 将output插入到QTableWidget的某一行的第一格中
             row = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row)

@@ -28,17 +28,10 @@ CREATE TABLE IF NOT EXISTS cardIndex (
 ```
 
 ```
-CREATE TABLE IF NOT EXISTS cardNo{} (
+CREATE TABLE cardNo{} (
   person_id INT,
   card_name VARCHAR(255),
   card_num INT,
   FOREIGN KEY (person_id) REFERENCES personInfo(person_id)
 );
-```
-
-```
-SELECT key_name, value
-FROM content_table
-INNER JOIN main_table ON content_table.main_id = main_table.id
-WHERE main_table.qq = '2185229059';
 ```
