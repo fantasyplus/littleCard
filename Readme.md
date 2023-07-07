@@ -35,3 +35,13 @@ CREATE TABLE cardNo{} (
   FOREIGN KEY (person_id) REFERENCES personInfo(person_id)
 );
 ```
+
+```
+use test1;
+delete from cardno10;
+delete from cardno11;
+delete from cardno14;
+delete from cardindex;
+delete from cardinfo;
+delete from personinfo;
+```

@@ -169,6 +169,7 @@ def insertCardNoTable(cursor: MySQLCursor,person_id2card_ids,card_id2card_name):
         print("insertCardNoTable发生错误: {}".format(err))
         
 def findCardInfoByCNQQ(cn, qq):
+    print("-----查找{}的谷子-----".format(cn))
     # 连接到数据库
     cnx,cursor=connectToDataBase()
     data = []
@@ -178,7 +179,8 @@ def findCardInfoByCNQQ(cn, qq):
         select_person_id_sql = "SELECT person_id FROM personInfo WHERE cn = %s OR qq = %s"
         cursor.execute(select_person_id_sql, (cn, qq))
         result = cursor.fetchone()
-
+        
+        # print("result: {}".format(result))
         if result is not None:
             person_id = result[0]
 
@@ -204,10 +206,13 @@ def findCardInfoByCNQQ(cn, qq):
                         if results:
                             # 如果一个谷子表里同一个人买了好几次，就会有好几条记录
                             # 只买了一次循环只会执行一次
+                            card_num = 0
+                            card_name = None
                             for row in results:
-                                card_name, card_num = row
-                                print("Card No.{}: Card Name: {}, Card Num: {}".format(card_id, card_name, card_num))
+                                card_name=row[0]
+                                card_num+=row[1]
                                 one_card_info.append((card_name, card_num))
+                            print("序号{}: \n谷子名: {}\n谷子数量: {}".format(card_id, card_name, card_num))
                         else:
                             print("Card No.{} not found".format(card_id))
                     except mysql.connector.Error as err:
@@ -224,7 +229,7 @@ def findCardInfoByCNQQ(cn, qq):
                         if results:
                             for row in results:
                                 card_character, card_type, card_condition, other = row
-                                print("Card Info: Card Character: {}, Card Type: {}, Card Condition: {}, Other: {}"
+                                print("角色: {}\n制品: {}\n状态: {}\n备注: {}"
                                       .format(card_character, card_type, card_condition, other))
                                 one_card_info.append((card_character, card_type, card_condition, other))
                         else:
@@ -297,6 +302,6 @@ if __name__ == "__main__":
     # 计算时间
     start = time.time()
     # writeToDataBase()
-    findCardInfoByCNQQ('银河', '2185229059')
+    findCardInfoByCNQQ('小爱喵', '')
     end = time.time()
     print("耗时{}秒".format(end - start))

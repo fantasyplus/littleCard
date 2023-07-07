@@ -21,7 +21,7 @@ class MainWindow(QWidget):
         layout = QVBoxLayout()
 
         file_layout = QHBoxLayout()
-        self.button = QPushButton('涛涛三分糖选择文件', self)
+        self.button = QPushButton('涛涛三分糖更新数据库', self)
         self.button.clicked.connect(self.buttonClicked)
         file_layout.addWidget(self.button)
 
@@ -44,22 +44,12 @@ class MainWindow(QWidget):
         self.selected_file_path = None
 
     def buttonClicked(self):
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.ExistingFile)
-        file_dialog.setNameFilter('Excel Files (*.xlsx)')
-        if file_dialog.exec_():
-            selected_files = file_dialog.selectedFiles()
-            if selected_files:
-                self.selected_file_path = selected_files[0]
-
-            file_name=os.path.basename(self.selected_file_path)
-            print("文件名: {}".format(file_name))
-            output=writeToDataBase()
-            # 将output插入到QTableWidget的某一行的第一格中
-            row = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(row)
-            item = QTableWidgetItem(output)
-            self.tableWidget.setItem(row, 0, item)
+        output=writeToDataBase()
+        # 将output插入到QTableWidget的某一行的第一格中
+        row = self.tableWidget.rowCount()
+        self.tableWidget.insertRow(row)
+        item = QTableWidgetItem(output)
+        self.tableWidget.setItem(row, 0, item)
 
     def confirmButtonClicked(self):
         if self.selected_file_path:

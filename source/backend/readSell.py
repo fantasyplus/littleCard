@@ -2,41 +2,63 @@ import openpyxl
 import re
 from os import path
 
+# def processString(string):
+#     strings=string.split(':')
+#     if(len(strings)<2):
+#         return "",""
+
+#     string=strings[1]
+#     # 初始化 cn 和 qq
+#     cn = ""
+#     qq = ""
+
+#     # 查找 + 符号的位置
+#     plus_index = string.find("+")
+
+#     if plus_index != -1:
+#         # 如果存在 + 符号
+#         cn = string[:plus_index].strip()
+#         qq = string[plus_index+1:].strip()
+#     else:
+#         # 如果不存在 + 符号
+#         # 使用正则表达式进行拆分
+#         pattern = r"([^\d]+)(\d+)"
+#         matches = re.findall(pattern, string)
+#         if len(matches) > 0:
+#             # 如果找到匹配项
+#             cn = matches[0][0]
+#             qq = matches[0][1]
+
+#     return cn, qq
 def processString(string):
-    strings=string.split(':')
-    if(len(strings)<2):
-        return "",""
+    pattern = r'cn\+群内qq:(.*)'
+    result = re.search(pattern, string)
+    cn_qq_str=""
+    cn=""
+    qq=""
 
-    string=strings[1]
-    # 初始化 cn 和 qq
-    cn = ""
-    qq = ""
+    if result:
+        cn_qq_str = result.group(1)
+    else:#如果没有cn+群内qq:，则直接返回，第一行标题的特殊处理
+        return cn,qq
+        
+    pattern = r'(.*?)\s*(?=\d{8,})'
+    result = re.findall(pattern, cn_qq_str)
 
-    # 查找 + 符号的位置
-    plus_index = string.find("+")
+    cn = result[0]
+    # 去除末尾的 + 号
+    if cn[-1] == '+':
+        cn = cn[:-1]
 
-    if plus_index != -1:
-        # 如果存在 + 符号
-        cn = string[:plus_index].strip()
-        qq = string[plus_index+1:].strip()
-    else:
-        # 如果不存在 + 符号
-        # 使用正则表达式进行拆分
-        pattern = r"([^\d]+)(\d+)"
-        matches = re.findall(pattern, string)
-        if len(matches) > 0:
-            # 如果找到匹配项
-            cn = matches[0][0]
-            qq = matches[0][1]
+    qq = re.search(r'\d{8,}', cn_qq_str).group()
 
-    return cn, qq
+    return cn,qq
 
 def readSellInfo(file_path):
     p=path.dirname(__file__)+'/../../excel/'+file_path
     # 读取Excel文件
     wb = openpyxl.load_workbook(p)
     sheet_names=['月影幽光','少女心事','樱的风语']
-    # sheet_names=['樱的风语']
     data=[]
 
     for sheet_name in sheet_names:
@@ -49,8 +71,7 @@ def readSellInfo(file_path):
             row_data=[]
             for i in range(len(row)):
                 if(i==0):
-                    cn=processString(row[i].value)[0]
-                    qq=processString(row[i].value)[1]
+                    cn,qq=processString(row[i].value)
                     if(cn=="" and qq==""):
                         row_data.append(row[i].value)
                     else:
