@@ -13,7 +13,7 @@ sys.path.append(parent_path)    # 如果要导入到包在上一级
 from backend.readSell import readSellInfo
 from backend.readCard import readCardInfo
 
-def insertPersonInfoTable(cursor:MySQLCursor,data):
+def insertPersonInfoTable(cursor:MySQLCursor,data_sell_info):
     person_id2card_ids = {}
     card_id2card_name = {}
     person_id = None
@@ -22,14 +22,21 @@ def insertPersonInfoTable(cursor:MySQLCursor,data):
     card_num = None
     cn=""
     qq=""
-    for item in data:
+    for item in data_sell_info:
         if len(item) == 2:
             # 如果长度为2，说明是标题行，获取了card_name和card_id就进行下一次循环
-            match=re.search(r'\d+', item[0])
-            card_id=match.group()
-            card_name = item[0][match.end():]
-
-            continue
+            match1=re.search(r'\d+', item[0])
+            #一个谷子多个角色的情况
+            match2=re.search(r'\d+\_\d+', item[0])
+            if match1 and match2 is None:
+                card_id=match1.group()
+                card_name = item[0][match1.end():]
+                continue
+            elif match2:
+                card_id=match2.group()
+                card_name = item[0][match2.end():]
+                continue
+            
         elif len(item) == 3:
             # 如果长度为3，说明是正常数据行
             cn = item[0]
@@ -178,68 +185,73 @@ def findCardInfoByCNQQ(cn, qq):
         # 查找 person_id
         select_person_id_sql = "SELECT person_id FROM personInfo WHERE cn = %s OR qq = %s"
         cursor.execute(select_person_id_sql, (cn, qq))
-        result = cursor.fetchone()
+        person_ids = cursor.fetchall()
         
-        # print("result: {}".format(result))
-        if result is not None:
-            person_id = result[0]
+        if person_ids is not None:
+            #一个cn有可能对应多个person_id（不同的qq号）
+            for person_id in person_ids:
+                # person_id = result[0]
 
-            # 查询 card_ids
-            select_card_ids_sql = "SELECT card_ids FROM cardIndex WHERE person_id = %s"
-            cursor.execute(select_card_ids_sql, (person_id,))
-            result = cursor.fetchone()
+                # 查询 card_ids
+                select_card_ids_sql = "SELECT card_ids FROM cardIndex WHERE person_id = %s"
+                cursor.execute(select_card_ids_sql, (person_id[0],))
+                card_ids = cursor.fetchone()
 
-            if result is not None:
-                card_ids_str = result[0]
-                card_ids = card_ids_str.split(',')
-                one_card_info = []
+                if card_ids is not None:
+                    card_ids_str = card_ids[0]
+                    card_ids = card_ids_str.split(',')
+                    one_card_info = []
 
-                for card_id in card_ids:
-                    try:
-                        # 根据 person_id 查询对应cardNo的信息
-                        select_card_No_sql = "SELECT card_name, card_num " \
-                                             "FROM cardNo{} " \
-                                             "WHERE person_id = %s".format(card_id)
-                        cursor.execute(select_card_No_sql, (person_id,))
-                        results = cursor.fetchall()
+                    for card_id in card_ids:
+                        try:
+                            # 根据 person_id 查询对应cardNo的信息
+                            select_card_No_sql = "SELECT card_name, card_num " \
+                                                "FROM cardNo{} " \
+                                                "WHERE person_id = %s".format(card_id)
+                            cursor.execute(select_card_No_sql, (person_id[0],))
+                            cardNo_infos = cursor.fetchall()
 
-                        if results:
-                            # 如果一个谷子表里同一个人买了好几次，就会有好几条记录
-                            # 只买了一次循环只会执行一次
-                            card_num = 0
-                            card_name = None
-                            for row in results:
-                                card_name=row[0]
-                                card_num+=row[1]
-                                one_card_info.append((card_name, card_num))
-                            print("序号{}: \n谷子名: {}\n谷子数量: {}".format(card_id, card_name, card_num))
-                        else:
-                            print("Card No.{} not found".format(card_id))
-                    except mysql.connector.Error as err:
-                        print("Error retrieving card info for Card No{}: {}".format(card_id, err))
+                            if cardNo_infos:
+                                # 如果一个谷子表里同一个人买了好几次，就会有好几条记录
+                                # 只买了一次循环只会执行一次
+                                card_num = 0
+                                card_name = None
+                                for row in cardNo_infos:
+                                    card_name=row[0]
+                                    card_num+=row[1]
+                                    one_card_info.append((card_name, card_num))
+                                print("序号{}: \t谷子名: {}\t谷子数量: {}".format(card_id, card_name, card_num))
+                            else:
+                                print("Card No.{} not found".format(card_id))
+                        except mysql.connector.Error as err:
+                            print("Error retrieving card info for Card No{}: {}".format(card_id, err))
 
-                    try:
-                        # 根据 card_id 查询对应cardInfo的信息
-                        select_card_info_sql = "SELECT card_character, card_type, card_condition, other " \
-                                               "FROM cardInfo " \
-                                               "WHERE card_id = %s"
-                        cursor.execute(select_card_info_sql, (card_id,))
-                        results = cursor.fetchall()
+                        try:
+                            #预处理，如果是一对多的情况，card_id为(19_1,1_1形式)，改成19,1
+                            if '_' in card_id:
+                                card_id=card_id.split('_')[0]
 
-                        if results:
-                            for row in results:
-                                card_character, card_type, card_condition, other = row
-                                print("角色: {}\n制品: {}\n状态: {}\n备注: {}"
-                                      .format(card_character, card_type, card_condition, other))
-                                one_card_info.append((card_character, card_type, card_condition, other))
-                        else:
-                            print("Card Info not found for Card ID: {}, Card Name:{}".format(card_id, card_name))
-                    except mysql.connector.Error as err:
-                        print("Error retrieving card info for Card ID {}: {}".format(card_id, err))
+                            # 根据 card_id 查询对应cardInfo的信息
+                            select_card_info_sql = "SELECT card_character, card_type, card_condition, other " \
+                                                "FROM cardInfo " \
+                                                "WHERE card_id = %s"
+                            cursor.execute(select_card_info_sql, (card_id,))
+                            card_infos = cursor.fetchall()
 
-                data.append(one_card_info)
-            else:
-                print("Card Index not found for Person ID: {}".format(person_id))
+                            if card_infos:
+                                for row in card_infos:
+                                    card_character, card_type, card_condition, other = row
+                                    print("角色: {}\t制品: {}\t状态: {}\t备注: {}\n"
+                                        .format(card_character, card_type, card_condition, other))
+                                    one_card_info.append((card_character, card_type, card_condition, other))
+                            else:
+                                print("Card Info not found for Card ID: {}, Card Name:{}".format(card_id, card_name))
+                        except mysql.connector.Error as err:
+                            print("Error retrieving card info for Card ID {}: {}".format(card_id, err))
+
+                    data.append(one_card_info)
+                else:
+                    print("Card Index not found for Person ID: {}".format(person_id))
         else:
             print("Person not found with CN: {} or QQ: {}".format(cn, qq))
 
@@ -299,9 +311,12 @@ def writeToDataBase():
     return "导入数据库成功！"
 
 if __name__ == "__main__":
+
+    #单次读取写入数据库
+    # writeToDataBase()
+
     # 计算时间
     start = time.time()
-    # writeToDataBase()
-    findCardInfoByCNQQ('小爱喵', '')
+    findCardInfoByCNQQ('寒茹怜', '')
     end = time.time()
     print("耗时{}秒".format(end - start))
